@@ -1,9 +1,16 @@
 name: Docker image
 
-# Manual only, like the generator's own image: this is a release artifact that
-# every installation pulls, so publishing is a deliberate act rather than a side
-# effect of every push.
+# A release artifact that every installation pulls, so publishing stays a
+# deliberate act — and pushing a version tag IS that act. A v* tag builds and
+# publishes on its own; everything else is manual, dispatched from the ref you
+# want built.
+#
+# Matches helex-solutions/mdbook, and for the same reason: a tag whose image is
+# published by hand later is a tag whose README documents an image that does not
+# exist yet.
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       tag:
@@ -40,20 +47,32 @@ jobs:
         env:
           IMAGE: ghcr.io/${{ github.repository }}
           INPUT_TAG: ${{ inputs.tag }}
-          LATEST: ${{ inputs.latest }}
+          INPUT_LATEST: ${{ inputs.latest }}
+          EVENT: ${{ github.event_name }}
         run: |
           ref="${GITHUB_REF_NAME}"
           if [ -n "$INPUT_TAG" ]; then tag="$INPUT_TAG"
           elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then tag="${ref#v}"
           else tag="${ref}-$(git rev-parse --short HEAD)"; fi
+          # :latest is what the README's `docker run` gets, so a release number moves
+          # it and a pre-release does not.
+          if [ "$EVENT" = workflow_dispatch ]; then
+            latest=$INPUT_LATEST
+          elif printf '%s' "$GITHUB_REF_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            latest=true
+          else
+            latest=false
+          fi
           tags="${IMAGE}:${tag}"
-          [ "$LATEST" = "true" ] && tags="${tags},${IMAGE}:latest"
+          [ "$latest" = "true" ] && tags="${tags},${IMAGE}:latest"
           echo "tags=${tags}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
-        if: inputs.push
+        # Empty on a tag push, and an empty string is falsey — a release tag
+        # would otherwise build and publish nothing.
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.push }}
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -62,8 +81,8 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: ${{ inputs.platforms }}
-          push: ${{ inputs.push }}
+          platforms: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
+          push: ${{ github.event_name != 'workflow_dispatch' || inputs.push }}
           tags: ${{ steps.tags.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -72,7 +91,7 @@ jobs:
       # is exactly what a cross-platform build can break. /health answers 503
       # until a browser can be started, so this is the real check.
       - name: Smoke-test the image
-        if: contains(inputs.platforms, 'linux/amd64')
+        if: ${{ contains(inputs.platforms || 'linux/amd64,linux/arm64', 'linux/amd64') }}
         run: |
           docker build -t md2pdf-smoke --load .
           docker run -d --name md2pdf-smoke -p 18509:18509 md2pdf-smoke

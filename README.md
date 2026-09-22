@@ -37,6 +37,27 @@ node server.mjs
 `MD2PDF_CHROMIUM` names the binary; without it the usual Linux and macOS paths
 are tried, and `/health` answers 503 if none is found.
 
+## Releasing
+
+```bash
+git tag -a v1.0.1 -m "…" && git push origin v1.0.1
+```
+
+Pushing the tag publishes `ghcr.io/helex-solutions/md2pdf:1.0.1`, and `:latest` as well because
+that is a plain release number — `:latest` is what the `docker run` above pulls. A pre-release
+(`v1.1.0-beta`) publishes its own tag and leaves `:latest` alone. The *Docker image* workflow is
+still dispatchable by hand for a one-off build.
+
+Two things the tag push cannot do for you:
+
+- **Check the tag is on `main` first** — `git merge-base --is-ancestor v1.0.1 origin/main`. A tag
+  orphaned by a force-push still builds, and publishes an image of a tree this repository no
+  longer has. That happened to `v1.0.0`, which shipped theme directories that had just been moved
+  out to [md2pdf-themes](https://github.com/helex-solutions/md2pdf-themes).
+- **Make a brand-new package public.** The first publish creates a *private* GHCR package
+  whatever the repository's visibility, and the registry answers `unauthorized` rather than "not
+  found" — which reads like a broken login rather than a missing setting.
+
 ## API
 
 ### `GET /themes`
