@@ -140,9 +140,12 @@ services:
 This is where a theme carrying **someone else's visual identity** belongs. A
 wordmark, a palette taken from a brand manual and a postal address are that
 organisation's, and putting them in a public image would let anyone render a
-document that looks as though it came from them. A directory that does not exist
-is ignored rather than fatal, so a volume that failed to mount does not take the
-renderer down with it.
+document that looks as though it came from them. `helex-solutions/md2pdf-themes`
+(private) holds the ones this project maintains, with a `check-themes.mjs` that
+asserts the invariants below.
+
+A directory that does not exist is ignored rather than fatal, so a volume that
+failed to mount does not take the renderer down with it.
 
 ### Why the port is a translation
 
