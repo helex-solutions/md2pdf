@@ -1,0 +1,239 @@
+/* HELEX document — ported from ~/bin/md2pdf-helex.css (WeasyPrint) for Chromium.
+ *
+ * What changed in the port, each because Chromium lacks the feature:
+ *   - the @page block is gone; its size/margin live in theme.json, so one
+ *     place decides the page box instead of it depending on load order;
+ *   - its top/bottom margin boxes are gone; their content is
+ *     re-authored in header.html / footer.html, which Chromium fills via
+ *     displayHeaderFooter. counter(page) becomes <span class="pageNumber">.
+ *   - @font-face for "Helex Sans" is gone: its sources were all
+ *     local(), which Chromium cannot resolve, and a DEFINED-but-failed
+ *     family drops to the generic default instead of falling through the
+ *     stack. Without it the stack resolves as intended.
+ *
+ * Everything else is the original sheet. Edit it here, not in ~/bin.
+ */
+:root { --md2pdf-scale: 1; }
+/* md2pdf-helex.css — HELEX Solutions brand theme for pandoc → weasyprint
+ *
+ * Brand palette:
+ *   green:  #3cb6ab   (primary accent, header bar, success)
+ *   blue:   #2b59c3   (headings, secondary accent)
+ *   orange: #ff7d01   (bullets, callouts, CTAs)
+ */
+
+
+
+:root {
+  --hlx-green: #3cb6ab;
+  --hlx-blue: #2b59c3;
+  --hlx-orange: #ff7d01;
+  --hlx-text: #2d2d2d;
+  --hlx-text-light: #666666;
+  --hlx-bg-soft: #f0faf9;
+  --hlx-bg-cta: #fff3e6;
+  --hlx-line: #e5e5e5;
+}
+
+/* ---------- Page geometry: branded header + footer per page ---------- */
+
+
+/* Blue thin bar directly under the green top band — emulated via a fixed
+ * pseudo-element on the body's first child. Weasyprint draws @page borders
+ * but not double-stacked bars, so use a running header instead.            */
+
+/* ---------- Body typography ---------- */
+html, body {
+  font-family: "Helex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  color: var(--hlx-text);
+  line-height: 1.45;
+}
+
+/* ---------- Cover/title block (h1 at top of document) ---------- */
+h1.title, body > h1:first-of-type {
+  color: var(--hlx-blue);
+  font-size: 22pt;
+  margin: 0 0 4mm 0;
+  padding-bottom: 3mm;
+  border-bottom: 2pt solid var(--hlx-green);
+  page-break-after: avoid;
+}
+
+p.subtitle {
+  color: var(--hlx-green);
+  font-size: 12pt;
+  font-style: italic;
+  margin-top: -2mm;
+}
+
+/* ---------- Headings ---------- */
+h1 {
+  color: var(--hlx-blue);
+  font-size: 16pt;
+  margin: 8mm 0 3mm 0;
+  padding-left: 5mm;
+  border-left: 4pt solid var(--hlx-blue);
+  page-break-after: avoid;
+}
+
+h2 {
+  color: var(--hlx-blue);
+  font-size: 13pt;
+  margin: 7mm 0 2.5mm 0;
+  padding-left: 4mm;
+  border-left: 3pt solid var(--hlx-green);
+  page-break-after: avoid;
+}
+
+h3 {
+  color: var(--hlx-text);
+  font-size: 11pt;
+  margin: 5mm 0 2mm 0;
+  page-break-after: avoid;
+}
+h3::before {
+  content: "▸ ";
+  color: var(--hlx-orange);
+  font-weight: bold;
+}
+
+h4 {
+  color: var(--hlx-text);
+  font-size: 10pt;
+  font-weight: bold;
+  margin: 4mm 0 1.5mm 0;
+  page-break-after: avoid;
+}
+
+/* ---------- Paragraphs / inline ---------- */
+p { margin: 0 0 2.5mm 0; }
+strong { color: var(--hlx-text); }
+em { color: var(--hlx-blue); font-style: italic; }
+a { color: var(--hlx-blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---------- Lists with branded bullets ---------- */
+ul { list-style: none; padding-left: 6mm; }
+ul li {
+  position: relative;
+  margin-bottom: 1.5mm;
+}
+ul li::before {
+  content: "●";
+  color: var(--hlx-orange);
+  position: absolute;
+  left: -5mm;
+  font-size: 9pt;
+}
+
+ol { padding-left: 7mm; }
+ol li {
+  margin-bottom: 1.5mm;
+}
+ol li::marker {
+  color: var(--hlx-blue);
+  font-weight: bold;
+}
+
+/* Nested lists use the green accent */
+ul ul li::before, ol ul li::before {
+  content: "○";
+  color: var(--hlx-green);
+}
+
+/* ---------- Blockquotes as callouts ---------- */
+blockquote {
+  background: var(--hlx-bg-soft);
+  border-left: 4pt solid var(--hlx-green);
+  margin: 3mm 0;
+  padding: 3mm 5mm;
+  color: var(--hlx-text);
+  font-style: normal;
+  border-radius: 0 3mm 3mm 0;
+}
+blockquote p { margin: 0; }
+blockquote p + p { margin-top: 1.5mm; }
+
+/* "CTA box" — last blockquote in a doc, or any with class .cta */
+blockquote.cta {
+  background: var(--hlx-bg-cta);
+  border-left-color: var(--hlx-orange);
+}
+
+/* ---------- Code ---------- */
+code {
+  font-family: "SF Mono", "Menlo", Consolas, monospace;
+  font-size: 9pt;
+  background: #f5f5f5;
+  padding: 0.5mm 1.5mm;
+  border-radius: 1mm;
+  color: var(--hlx-blue);
+}
+pre {
+  background: #f5f5f5;
+  border-left: 3pt solid var(--hlx-blue);
+  padding: 3mm 4mm;
+  border-radius: 0 2mm 2mm 0;
+  overflow: hidden;
+  font-size: 8.5pt;
+  page-break-inside: avoid;
+}
+pre code {
+  background: none;
+  padding: 0;
+  color: var(--hlx-text);
+}
+
+/* ---------- Tables ---------- */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 3mm 0;
+  font-size: 9pt;
+  page-break-inside: avoid;
+}
+th {
+  background: var(--hlx-blue);
+  color: white;
+  text-align: left;
+  padding: 2mm 3mm;
+  font-weight: bold;
+}
+td {
+  padding: 2mm 3mm;
+  border-bottom: 0.5pt solid var(--hlx-line);
+}
+tr:nth-child(even) td {
+  background: #fafafa;
+}
+
+/* ---------- Horizontal rule as branded divider ---------- */
+hr {
+  border: none;
+  height: 1.5pt;
+  background: linear-gradient(to right, var(--hlx-green), var(--hlx-blue), var(--hlx-orange));
+  margin: 5mm 0;
+}
+
+/* ---------- Images ---------- */
+img {
+  max-width: 100%;
+  height: auto;
+  margin: 2mm 0;
+}
+figure {
+  text-align: center;
+  margin: 4mm 0;
+  page-break-inside: avoid;
+}
+figcaption {
+  font-size: 8pt;
+  color: var(--hlx-text-light);
+  font-style: italic;
+  margin-top: 1mm;
+}
+
+/* ---------- Avoid orphan/widow heading splits ---------- */
+h1, h2, h3, h4 { break-after: avoid; }
+table, pre, blockquote, figure { break-inside: avoid; }

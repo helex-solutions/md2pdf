@@ -1,0 +1,12 @@
+<!-- Replaces @bottom-left/@bottom-center/@bottom-right from md2pdf-helex.css.
+     counter(page)/counter(pages) become Chromium's pageNumber/totalPages spans. -->
+<div style="width:100%;padding:0 18mm 4mm;font-family:Helvetica,Arial,sans-serif;
+            -webkit-print-color-adjust:exact;print-color-adjust:exact;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;font-size:7pt;color:#666;">
+    <span>HELEX Solutions&nbsp; |&nbsp; helex-solutions.com</span>
+    <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+  </div>
+  <div style="text-align:center;font-size:5.5pt;color:#999;margin-top:1mm;">
+    CONFIDENTIAL &middot; Proprietary information of HELEX Solutions
+  </div>
+</div>

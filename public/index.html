@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>md2pdf &mdash; HTML &rarr; PDF rendering service</title>
+  <style>
+    :root {
+      --primary: #1f3a5f;
+      --accent: #b45309;
+      --bg: #f7f9fc;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 2rem 1.5rem;
+    }
+    header .wrap { max-width: 960px; margin: 0 auto; }
+    header h1 { margin: 0 0 .5rem; font-size: 2rem; }
+    header p { margin: 0; opacity: .9; }
+    main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.4rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: .35rem;
+      margin-top: 0;
+    }
+    h3 { font-size: 1.1rem; margin-top: 1.5rem; }
+    code {
+      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: .9em;
+      background: #eef2f7;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: .85rem;
+    }
+    pre code { background: transparent; padding: 0; color: inherit; }
+    .endpoint {
+      display: inline-block;
+      background: #eef2f7;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: .85rem;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: .9rem;
+    }
+    th, td {
+      text-align: left;
+      padding: .5rem .75rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { background: #eef2f7; }
+    .note {
+      border-left: 4px solid var(--accent);
+      background: #fffaf3;
+      padding: .75rem 1rem;
+      border-radius: 0 4px 4px 0;
+    }
+    .note strong { color: var(--accent); }
+    footer {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      color: var(--muted);
+      font-size: .85rem;
+      border-top: 1px solid var(--border);
+    }
+    a { color: var(--primary); }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>md2pdf &#128196;</h1>
+    <p>REST API for rendering a self-contained HTML document into a PDF.</p>
+  </div>
+</header>
+
+<main>
+  <section>
+    <h2>What it is</h2>
+    <p>
+      <strong>md2pdf</strong> takes a complete HTML document and prints it with headless
+      Chromium. It exists because a PDF needs a layout engine, and the services that want one
+      &mdash; the <a href="https://github.com/helex-solutions/mdbook">mdbook</a> generator, the
+      wiki's own export &mdash; ship deliberately small runtime images with no browser in them.
+      One renderer, its own image, added to a deployment only when the feature is wanted.
+    </p>
+    <p>
+      The document is sent as <code>html</code> in a JSON body, paper and margins ride on
+      <code>options</code>, and an optional <strong>theme</strong> supplies a stylesheet, a
+      title block and per-page header/footer furniture.
+    </p>
+    <div class="note">
+      <p style="margin:0">
+        <strong>The renderer fetches nothing.</strong> Documents arrive self-contained, so every
+        network request the loaded page makes is aborted &mdash; only <code>data:</code> URIs
+        resolve. An <code>&lt;img src="http://&hellip;"&gt;</code> written into page content
+        therefore cannot become a request made from inside the deployment's network. Inline your
+        assets before sending.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Endpoints</h2>
+    <table>
+      <thead>
+      <tr><th>Method</th><th>Path</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+      <tr><td>GET</td><td><span class="endpoint">/</span></td><td>This page</td></tr>
+      <tr><td>GET</td><td><span class="endpoint">/health</span></td><td>Liveness probe &mdash; 503 until a browser can be launched</td></tr>
+      <tr><td>GET</td><td><span class="endpoint">/themes</span></td><td>Themes this instance offers</td></tr>
+      <tr><td>POST</td><td><span class="endpoint">/pdf</span></td><td>HTML &rarr; <code>application/pdf</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>POST /pdf</h2>
+    <p>A JSON body. Only <code>html</code> is required.</p>
+    <table>
+      <thead>
+      <tr><th>Field</th><th>Default</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+      <tr><td><code>html</code></td><td>&mdash;</td><td><strong>Required.</strong> A complete HTML document</td></tr>
+      <tr><td><code>filename</code></td><td><code>document.pdf</code></td><td><code>Content-Disposition</code> name; sanitized, and sent in both the ASCII and RFC&nbsp;5987 forms so a non-Latin title survives</td></tr>
+      <tr><td><code>title</code>, <code>site</code>, <code>date</code></td><td>&mdash;</td><td>Substituted into a theme's title block</td></tr>
+      <tr><td><code>options.theme</code></td><td><code>site</code></td><td>A name from <code>/themes</code>; an unknown one is a 400, never a silent unstyled render</td></tr>
+      <tr><td><code>options.css</code></td><td>&mdash;</td><td>Extra CSS, appended after the theme's</td></tr>
+      <tr><td><code>options.logo</code></td><td>&mdash;</td><td>A <code>data:</code> image URI for the theme's title block</td></tr>
+      <tr><td><code>options.format</code></td><td><code>A4</code></td><td>Paper size</td></tr>
+      <tr><td><code>options.landscape</code></td><td><code>false</code></td><td></td></tr>
+      <tr><td><code>options.margin</code></td><td><code>18/16/20/16&nbsp;mm</code></td><td><code>{top,right,bottom,left}</code> as CSS lengths</td></tr>
+      <tr><td><code>options.scale</code></td><td><code>1</code></td><td>0.1&ndash;2</td></tr>
+      <tr><td><code>options.printBackground</code></td><td><code>true</code></td><td>Callout tints and table header fills are meaning, not decoration</td></tr>
+      <tr><td><code>options.headerTemplate</code>, <code>options.footerTemplate</code></td><td>the theme's</td><td>Chromium header/footer HTML (<code>pageNumber</code>, <code>totalPages</code> classes)</td></tr>
+      <tr><td><code>options.timeout</code></td><td><code>30000</code></td><td>ms, clamped to 120000</td></tr>
+      </tbody>
+    </table>
+    <h3>Example</h3>
+<pre><code>curl -X POST http://localhost:18509/pdf \
+  -H 'Content-Type: application/json' \
+  -d '{"html":"&lt;h1&gt;Hello&lt;/h1&gt;","filename":"hello.pdf","options":{"theme":"plain"}}' \
+  -o hello.pdf</code></pre>
+    <h3>Errors</h3>
+    <p>
+      JSON, as <code>{"error": "&hellip;"}</code>: <code>400</code> malformed or unknown theme,
+      <code>401</code> bad token, <code>413</code> body too large, <code>429</code> every render
+      slot busy, <code>500</code> render failed, <code>503</code> no browser.
+    </p>
+  </section>
+
+  <section>
+    <h2>Themes</h2>
+    <p>
+      <code>GET /themes</code> lists what this instance offers, so a caller can validate its
+      configuration when it builds rather than when a reader clicks a button.
+    </p>
+<pre><code>$ curl -s http://localhost:18509/themes
+{"themes":[{"name":"site","label":"Site","options":{}}, &hellip; ]}</code></pre>
+    <p>
+      <code>site</code> is the default and applies nothing &mdash; the caller's document is
+      already styled. <code>plain</code> is a readable unstyled baseline. The rest carry a
+      stylesheet, an in-document title block and per-page furniture.
+    </p>
+    <h3>Mounting your own</h3>
+    <p>
+      <code>MD2PDF_THEMES_DIR</code> names extra directories (colon-separated) scanned after the
+      built-ins, so a deployment adds themes without forking the image &mdash; and a mounted
+      theme sharing a name with a built-in one <strong>wins</strong>, which is how you adjust a
+      shipped theme in place.
+    </p>
+<pre><code>docker run -p 18509:18509 \
+  -v /srv/brand-themes:/themes:ro \
+  -e MD2PDF_THEMES_DIR=/themes \
+  ghcr.io/helex-solutions/md2pdf</code></pre>
+    <p>
+      This is where a theme carrying <strong>someone else's visual identity</strong> belongs. A
+      wordmark, a palette taken from a brand manual and a postal address are that organisation's,
+      and putting them in a public image would let anyone render a document that looks as though
+      it came from them.
+    </p>
+    <h3>A theme directory</h3>
+<pre><code>themes/&lt;name&gt;/
+  theme.css     the stylesheet
+  title.html    in-document title block, once, on page 1   (optional)
+  header.html   running header, drawn into every page margin (optional)
+  footer.html   running footer                              (optional)
+  theme.json    { label, description, options }</code></pre>
+    <p>
+      <code>title.html</code> and <code>header.html</code> are different things on purpose: the
+      first is ordinary body HTML, the second is drawn by Chromium into the page margin on every
+      page. Chromium has no <code>@page</code> margin boxes and cannot resolve a
+      <code>local()</code>-only <code>@font-face</code>, so a theme ported from a print
+      stylesheet needs both translated &mdash; see the repository README.
+    </p>
+  </section>
+
+  <section>
+    <h2>Health check</h2>
+    <p>
+      <code>GET /health</code> answers <code>200</code> only when a browser can actually be
+      launched, and <code>503</code> otherwise &mdash; so an image whose Chromium is broken is
+      unhealthy rather than quietly failing one request at a time.
+    </p>
+<pre><code>$ curl http://localhost:18509/health
+{"status":"ok","engine":"chromium","version":"141.0.7390.54","busy":0,"concurrency":2}</code></pre>
+  </section>
+
+  <section>
+    <h2>Configuration</h2>
+    <table>
+      <thead>
+      <tr><th>Variable</th><th>Default</th><th></th></tr>
+      </thead>
+      <tbody>
+      <tr><td><code>MD2PDF_PORT</code></td><td><code>18509</code></td><td></td></tr>
+      <tr><td><code>MD2PDF_HOST</code></td><td><code>0.0.0.0</code></td><td></td></tr>
+      <tr><td><code>MD2PDF_TOKEN</code></td><td>unset</td><td>When set, every request needs <code>Authorization: Bearer &lt;token&gt;</code></td></tr>
+      <tr><td><code>MD2PDF_CONCURRENCY</code></td><td><code>2</code></td><td>Renders in flight; the rest queue, then 429</td></tr>
+      <tr><td><code>MD2PDF_MAX_BODY</code></td><td><code>67108864</code></td><td>Request body ceiling (64&nbsp;MB)</td></tr>
+      <tr><td><code>MD2PDF_THEMES_DIR</code></td><td>unset</td><td>Extra theme directories, colon-separated</td></tr>
+      <tr><td><code>MD2PDF_CHROMIUM</code></td><td>auto</td><td>Path to the browser binary</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Keep it unpublished on a private network, or set <code>MD2PDF_TOKEN</code>. Port 18509
+      comes from the 185xx infrastructure block of the tx/emr port map.
+    </p>
+  </section>
+</main>
+
+<footer>
+  md2pdf &mdash; the PDF renderer behind
+  <a href="https://github.com/helex-solutions/mdbook">mdbook</a>'s PDF export.
+</footer>
+</body>
+</html>

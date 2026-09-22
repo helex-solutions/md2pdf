@@ -1,0 +1,13 @@
+{
+  "label": "HELEX document",
+  "description": "Ported from md2pdf.sh --format=helex.",
+  "options": {
+    "format": "A4",
+    "margin": {
+      "top": "38mm",
+      "right": "18mm",
+      "bottom": "22mm",
+      "left": "18mm"
+    }
+  }
+}

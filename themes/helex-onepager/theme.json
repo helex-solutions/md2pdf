@@ -1,0 +1,13 @@
+{
+  "label": "HELEX one-pager",
+  "description": "Ported from md2pdf.sh --format=helex-onepager.",
+  "options": {
+    "format": "A4",
+    "margin": {
+      "top": "14mm",
+      "right": "14mm",
+      "bottom": "16mm",
+      "left": "14mm"
+    }
+  }
+}
