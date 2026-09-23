@@ -1,4 +1,8 @@
-# md2pdf-service.sh — Markdown → PDF from the command line
+# md2pdf-service — Markdown → PDF from the command line
+
+Two clients that do the same thing: **`md2pdf-service.sh`** (bash: macOS, Linux,
+WSL) and **`md2pdf-service.ps1`** (PowerShell: Windows PowerShell 5.1 and
+PowerShell 7 on any OS).
 
 A small client for the md2pdf service. It turns a Markdown file into one
 self-contained HTML document with pandoc and has the service print it. By default
@@ -11,8 +15,11 @@ md2pdf-service.sh --theme helex -d out/ a.md b.md c.md    # one PDF per file
 
 ## Install
 
-Needs **pandoc**, **curl** and **jq** (`brew install pandoc jq` on macOS;
-`apt install pandoc jq curl` on Debian/Ubuntu).
+Needs **pandoc 2.19 or newer** (2022). The bash client also needs **curl** and
+**jq** (`brew install pandoc jq` on macOS, `apt install pandoc jq curl` on Debian/Ubuntu,
+though Ubuntu 22.04's pandoc 2.9 is too old: take the `.deb` from
+[pandoc.org](https://pandoc.org/installing.html)). The PowerShell client needs
+only pandoc.
 
 The script needs its two helper files next to it: the Mermaid filter and the
 base stylesheet. Keep the three together. Either clone the repository and link
@@ -34,6 +41,32 @@ chmod +x md2pdf-service.sh
 ```
 
 A symlink works: the script resolves it to find its helper files.
+
+### Windows (PowerShell)
+
+```powershell
+winget install --id JohnMacFarlane.Pandoc
+$dir = "$HOME\md2pdf"; New-Item -ItemType Directory -Force $dir | Out-Null
+foreach ($f in 'md2pdf-service.ps1','md2pdf-service-mermaid.lua','md2pdf-service-base.css') {
+  Invoke-WebRequest "https://raw.githubusercontent.com/helex-solutions/md2pdf/main/client/$f" -OutFile "$dir\$f"
+}
+Unblock-File "$dir\md2pdf-service.ps1"
+```
+
+Then:
+
+```powershell
+& "$HOME\md2pdf\md2pdf-service.ps1" -Theme tervisekassa .\dokument.md
+& "$HOME\md2pdf\md2pdf-service.ps1" -Theme helex -OutDir out a.md b.md
+Get-Help "$HOME\md2pdf\md2pdf-service.ps1" -Detailed
+```
+
+If scripts are blocked by the execution policy, run it as
+`powershell -ExecutionPolicy Bypass -File "$HOME\md2pdf\md2pdf-service.ps1" …`
+or allow your own scripts once with `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+The PowerShell options are the same as below, in PowerShell style: `-Theme`,
+`-OutDir`, `-Output`, `-Landscape`, `-Paper`, `-Css`, `-Title`, `-Site`, `-Date`,
+`-Logo`, `-Url`, `-HtmlOnly`.
 
 ## Use
 

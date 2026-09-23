@@ -150,6 +150,13 @@ INPUT="${POSITIONAL[0]}"
 
 [ -f "$INPUT" ] || die "no such file: $INPUT"
 for t in pandoc curl jq; do command -v "$t" >/dev/null || die "$t is not installed"; done
+# pandoc 2.19+ (2022): --embed-resources, and a gfm reader that takes the
+# yaml_metadata_block and fenced_divs extensions. Older ones fail half-way.
+pv=$(pandoc --version | head -1 | sed -E 's/^pandoc(\.exe)? +//; s/[^0-9.].*$//')
+pmaj=${pv%%.*}; prest=${pv#*.}; pmin=${prest%%.*}
+if [ "${pmaj:-0}" -lt 2 ] || { [ "${pmaj:-0}" -eq 2 ] && [ "${pmin:-0}" -lt 19 ]; }; then
+  die "pandoc $pv is too old; 2.19 or newer is needed (https://pandoc.org/installing.html)"
+fi
 [ -f "$SCRIPT_DIR/md2pdf-service-mermaid.lua" ] || die "md2pdf-service-mermaid.lua must sit next to this script ($SCRIPT_DIR)"
 [ -z "$CSS_FILE" ] || [ -f "$CSS_FILE" ] || die "no such CSS file: $CSS_FILE"
 [ -z "$LOGO_FILE" ] || [ -f "$LOGO_FILE" ] || die "no such logo file: $LOGO_FILE"
