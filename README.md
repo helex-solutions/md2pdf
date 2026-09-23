@@ -112,7 +112,7 @@ More can be **mounted** — see below.
 A theme is a directory under `themes/`:
 
 ```
-themes/<name>/  theme.css  title.html  header.html  footer.html  theme.json
+themes/<name>/  theme.css  title.html  header.html  footer.html  theme.json  [logo.svg|png|jpg|webp]
 ```
 
 `title.html` is an in-document title block that appears once, on page 1.
@@ -120,6 +120,14 @@ themes/<name>/  theme.css  title.html  header.html  footer.html  theme.json
 **every** page — a different thing, kept under a different name on purpose.
 `theme.json` carries the page box the stylesheet was drawn for; those values are
 defaults, under whatever the caller asks for.
+
+**Logos.** `{{logo}}` in a template becomes an `<img class="logo">` from the
+request's `options.logo` (a `data:image/…` URI) or, when the request sends none,
+from a `logo.<ext>` file in the theme's directory — which is how a deployment
+that holds an approved copy of a brand's mark makes it the default without it
+ever entering this image. A template may offer both a logo and a typographic
+stand-in, `<!--LOGO_START-->…<!--LOGO_END-->` and
+`<!--NOLOGO_START-->…<!--NOLOGO_END-->`; exactly one of them is kept.
 
 ### Mounting your own
 
