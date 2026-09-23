@@ -219,3 +219,16 @@ test('the root serves the API description, and it describes what is really there
     server.close()
   }
 })
+
+test('the API description shows the public URL, escaped, in every example', async () => {
+  const { renderIndex } = await import('../server.mjs')
+  const page = fs.readFileSync(new URL('../public/index.html', import.meta.url), 'utf8')
+  assert.ok(page.includes('{{PUBLIC_URL}}'), 'the page has no {{PUBLIC_URL}} placeholder')
+  assert.equal(page.includes('localhost:18509/'), false, 'an example still hard-codes localhost:18509')
+  const html = renderIndex(page, 'https://docs.example.org/md2pdf')
+  assert.equal(html.includes('{{PUBLIC_URL}}'), false)
+  for (const p of ['/pdf', '/themes', '/health']) {
+    assert.ok(html.includes(`https://docs.example.org/md2pdf${p}`), `no public example for ${p}`)
+  }
+  assert.equal(renderIndex('{{PUBLIC_URL}}', 'http://x/"><script>'), 'http://x/&quot;&gt;&lt;script&gt;')
+})

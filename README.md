@@ -94,6 +94,7 @@ Errors come back as JSON: 400 malformed, 401 bad token, 413 body too large,
 | `MD2PDF_MAX_BODY` | `67108864` | request body ceiling (64 MB) |
 | `MD2PDF_CHROMIUM` | auto | path to the browser binary |
 | `MD2PDF_THEMES_DIR` | unset | extra theme directories, colon-separated (see Themes) |
+| `MD2PDF_PUBLIC_URL` | `http://localhost:<port>` | base URL written into the API description's examples (`GET /`); set it behind a proxy |
 
 ## Themes
 
@@ -195,5 +196,7 @@ fetch — and an `<img src="http://…">` written into a wiki page therefore can
 become a request made from inside the deployment's network.
 
 That is the security boundary this service rests on, along with one browser
-context per render, an unprivileged user, and a hard render timeout. Keep it
-unpublished on a private network, or set `MD2PDF_TOKEN`.
+context per render, an unprivileged user, and a hard render timeout. What an
+open endpoint therefore exposes is cost, not reach: keep it on a private
+network, set `MD2PDF_TOKEN`, or put it behind a proxy that rate-limits renders
+and caps the body size (docs.helex.org/md2pdf/ does the last).

@@ -23,6 +23,10 @@ const CONCURRENCY = Number(process.env.MD2PDF_CONCURRENCY || 2)
 // megabytes. The ceiling is what keeps one caller from making the service hold
 // a whole filesystem in memory.
 const MAX_BODY = Number(process.env.MD2PDF_MAX_BODY || 64 * 1024 * 1024)
+// Where callers reach this service, as written into the API description's
+// examples. A deployment behind a proxy sets its public URL, so a reader can
+// copy an example and run it; the default is right for `docker run -p`.
+const PUBLIC_URL = (process.env.MD2PDF_PUBLIC_URL || `http://localhost:${PORT}`).replace(/\/+$/, '')
 
 // The API description, read once. A service whose root answers 404 tells whoever
 // found it nothing; this one describes itself, which is most of what a reader
@@ -32,12 +36,20 @@ let indexHtml = null
 function apiDescription() {
   if (indexHtml === null) {
     try {
-      indexHtml = fs.readFileSync(INDEX, 'utf8')
+      indexHtml = renderIndex(fs.readFileSync(INDEX, 'utf8'), PUBLIC_URL)
     } catch {
       indexHtml = false // not installed — the endpoints still work
     }
   }
   return indexHtml
+}
+
+const escapeHtml = (v) =>
+  String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+
+/** The page with every {{PUBLIC_URL}} replaced by the (escaped) base URL. */
+export function renderIndex(html, publicUrl) {
+  return html.replaceAll('{{PUBLIC_URL}}', escapeHtml(publicUrl))
 }
 
 const json = (res, status, body) => {
