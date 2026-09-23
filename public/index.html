@@ -131,6 +131,7 @@
 
   <section>
     <h2>Endpoints</h2>
+    <p>Base URL: <code>{{PUBLIC_URL}}</code></p>
     <table>
       <thead>
       <tr><th>Method</th><th>Path</th><th>Purpose</th></tr>
@@ -168,7 +169,7 @@
       </tbody>
     </table>
     <h3>Example</h3>
-<pre><code>curl -X POST http://localhost:18509/pdf \
+<pre><code>curl -X POST {{PUBLIC_URL}}/pdf \
   -H 'Content-Type: application/json' \
   -d '{"html":"&lt;h1&gt;Hello&lt;/h1&gt;","filename":"hello.pdf","options":{"theme":"plain"}}' \
   -o hello.pdf</code></pre>
@@ -186,7 +187,7 @@
       <code>GET /themes</code> lists what this instance offers, so a caller can validate its
       configuration when it builds rather than when a reader clicks a button.
     </p>
-<pre><code>$ curl -s http://localhost:18509/themes
+<pre><code>$ curl -s {{PUBLIC_URL}}/themes
 {"themes":[{"name":"site","label":"Site","options":{}}, &hellip; ]}</code></pre>
     <p>
       <code>site</code> is the default and applies nothing &mdash; the caller's document is
@@ -233,7 +234,7 @@
       launched, and <code>503</code> otherwise &mdash; so an image whose Chromium is broken is
       unhealthy rather than quietly failing one request at a time.
     </p>
-<pre><code>$ curl http://localhost:18509/health
+<pre><code>$ curl {{PUBLIC_URL}}/health
 {"status":"ok","engine":"chromium","version":"141.0.7390.54","busy":0,"concurrency":2}</code></pre>
   </section>
 
@@ -251,11 +252,14 @@
       <tr><td><code>MD2PDF_MAX_BODY</code></td><td><code>67108864</code></td><td>Request body ceiling (64&nbsp;MB)</td></tr>
       <tr><td><code>MD2PDF_THEMES_DIR</code></td><td>unset</td><td>Extra theme directories, colon-separated</td></tr>
       <tr><td><code>MD2PDF_CHROMIUM</code></td><td>auto</td><td>Path to the browser binary</td></tr>
+      <tr><td><code>MD2PDF_PUBLIC_URL</code></td><td><code>http://localhost:&lt;port&gt;</code></td><td>Base URL used in this page's examples &mdash; set it when the service sits behind a proxy</td></tr>
       </tbody>
     </table>
     <p>
-      Keep it unpublished on a private network, or set <code>MD2PDF_TOKEN</code>. Port 18509
-      comes from the 185xx infrastructure block of the tx/emr port map.
+      Because the renderer fetches nothing, what an open endpoint exposes is <em>cost</em>, not
+      reach: keep it on a private network, set <code>MD2PDF_TOKEN</code>, or put it behind a
+      proxy that rate-limits renders and caps the body size. Port 18509 comes from the 185xx
+      infrastructure block of the tx/emr port map.
     </p>
   </section>
 </main>
