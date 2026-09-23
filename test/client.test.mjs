@@ -15,8 +15,8 @@ test('client script parses and prints its help', () => {
   for (const opt of ['--theme', '--outdir', '--logo', '--html-only']) assert.ok(help.includes(opt), `help lacks ${opt}`)
 })
 
-test('client helper files ship next to the script', () => {
-  for (const f of ['md2pdf-service-mermaid.lua', 'md2pdf-service-base.css']) {
+test('client helper files ship next to the scripts', () => {
+  for (const f of ['md2pdf-service-mermaid.lua', 'md2pdf-service-base.css', 'md2pdf-service.ps1']) {
     assert.ok(fs.existsSync(path.join(dir, f)), `${f} missing from client/`)
   }
 })
@@ -46,4 +46,20 @@ test('client finds its helpers through a symlink', { skip: !hasPandoc && 'needs 
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true })
   }
+})
+
+test('the two clients agree on options and the pandoc floor', () => {
+  const sh = fs.readFileSync(script, 'utf8')
+  const ps = fs.readFileSync(path.join(dir, 'md2pdf-service.ps1'), 'utf8')
+  // Same knobs, each in its own shell's spelling.
+  for (const [a, b] of [['--theme', '$Theme'], ['--outdir', '$OutDir'], ['--logo', '$Logo'], ['--landscape', '$Landscape'], ['--html-only', '$HtmlOnly'], ['--css', '$Css']]) {
+    assert.ok(sh.includes(a), `sh lacks ${a}`)
+    assert.ok(ps.includes(b), `ps1 lacks ${b}`)
+  }
+  for (const src of [sh, ps]) {
+    assert.ok(src.includes('2.19'), 'pandoc floor missing')
+    assert.ok(src.includes('document-css'), 'pandoc stylesheet switch missing')
+    assert.ok(src.includes('data-md2pdf-src'), 'mermaid attribute rename missing')
+  }
+  assert.ok(/-M\s+"?document-css/.test(ps) && /-M document-css/.test(sh), 'document-css must be passed with -M, not -V')
 })
