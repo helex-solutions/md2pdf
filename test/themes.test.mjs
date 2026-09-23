@@ -232,3 +232,36 @@ test('the API description shows the public URL, escaped, in every example', asyn
   }
   assert.equal(renderIndex('{{PUBLIC_URL}}', 'http://x/"><script>'), 'http://x/&quot;&gt;&lt;script&gt;')
 })
+
+test('LOGO/NOLOGO blocks: exactly one survives', () => {
+  const tpl = '<a><!--LOGO_START-->{{logo}}<!--LOGO_END--><!--NOLOGO_START--><b>hex</b><!--NOLOGO_END--></a>'
+  const withLogo = fillTemplate(tpl, { logo: 'data:image/png;base64,AAA' })
+  assert.match(withLogo, /<img class="logo"/)
+  assert.equal(withLogo.includes('hex'), false, 'the stand-in survived next to the logo')
+  const without = fillTemplate(tpl, {})
+  assert.match(without, /<b>hex<\/b>/)
+  assert.equal(without.includes('<img'), false)
+})
+
+test('a mounted theme logo.<ext> is its default logo; a request logo wins', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'md2pdf-logo-'))
+  const dir = path.join(root, 'brandx')
+  fs.mkdirSync(dir)
+  fs.writeFileSync(path.join(dir, 'theme.css'), 'body{}')
+  fs.writeFileSync(path.join(dir, 'title.html'), '<div>{{logo}}</div>')
+  fs.writeFileSync(path.join(dir, 'logo.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>')
+  const prev = process.env.MD2PDF_THEMES_DIR
+  process.env.MD2PDF_THEMES_DIR = root
+  resetThemes()
+  try {
+    const own = resolveTheme('brandx').titleBlock
+    assert.match(own, /src="data:image\/svg\+xml;base64,/)
+    const theirs = resolveTheme('brandx', { logo: 'data:image/png;base64,QUJD' }).titleBlock
+    assert.match(theirs, /src="data:image\/png;base64,QUJD"/)
+  } finally {
+    if (prev === undefined) delete process.env.MD2PDF_THEMES_DIR
+    else process.env.MD2PDF_THEMES_DIR = prev
+    resetThemes()
+    fs.rmSync(root, { recursive: true, force: true })
+  }
+})

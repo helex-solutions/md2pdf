@@ -7,6 +7,7 @@
 //   header.html   Chromium running header  (optional)
 //   footer.html   Chromium running footer  (optional)
 //   theme.json    { label, description, options: { format, margin, scale, … } }
+//   logo.svg|png|jpg|jpeg|webp  default {{logo}} when a request sends none (optional)
 //
 // title.html and header.html are different things and the distinction matters:
 // the title block is ordinary body HTML that appears once on page 1, while the
@@ -60,6 +61,27 @@ const read = (dir, file) => {
   return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null
 }
 
+const LOGO_TYPES = { svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' }
+
+/**
+ * A theme's default logo, as a data: URI — or null.
+ *
+ * A brand's mark does not ship in this image; a deployment that holds an
+ * approved copy drops it next to the mounted theme as logo.<ext>, and every
+ * render with that theme carries it unless the request brings its own.
+ */
+function readLogo(dir) {
+  for (const [ext, mime] of Object.entries(LOGO_TYPES)) {
+    const p = path.join(dir, `logo.${ext}`)
+    try {
+      if (fs.statSync(p).isFile()) return `data:${mime};base64,${fs.readFileSync(p).toString('base64')}`
+    } catch {
+      /* absent — try the next type */
+    }
+  }
+  return null
+}
+
 let cache = null
 
 /** Every theme on disk — built-in first, then each MD2PDF_THEMES_DIR. */
@@ -95,7 +117,8 @@ export function loadThemes() {
         css,
         title: read(dir, 'title.html'),
         header: read(dir, 'header.html'),
-        footer: read(dir, 'footer.html')
+        footer: read(dir, 'footer.html'),
+        logo: readLogo(dir)
       })
     }
   }
@@ -140,7 +163,14 @@ const esc = (s) =>
 export function fillTemplate(tpl, { title = '', site = '', date = '', logo = null } = {}) {
   if (!tpl) return ''
   const img = logo && /^data:image\//i.test(logo) ? `<img class="logo" src="${esc(logo)}">` : ''
+  // A template may offer two mutually exclusive marks, as md2pdf.sh's did:
+  // <!--LOGO_START-->…<!--LOGO_END--> for a real logo and
+  // <!--NOLOGO_START-->…<!--NOLOGO_END--> for the typographic stand-in.
+  // Exactly one survives; without this a supplied logo appears NEXT TO the
+  // stand-in instead of replacing it.
+  const drop = img ? /<!--NOLOGO_START-->[\s\S]*?<!--NOLOGO_END-->/g : /<!--LOGO_START-->[\s\S]*?<!--LOGO_END-->/g
   return tpl
+    .replace(drop, '')
     .replace(/\{\{logo\}\}/g, img)
     .replace(/\{\{title\}\}/g, esc(title))
     .replace(/\{\{site\}\}/g, esc(site))
@@ -162,7 +192,8 @@ export function resolveTheme(name, { css = '', title, site, date, logo } = {}) {
     throw Object.assign(new Error(`unknown theme "${name}" — known: ${known}`), { status: 400 })
   }
   if (!theme) return { css, options: {}, titleBlock: '', headerTemplate: '', footerTemplate: '' }
-  const ctx = { title, site, date, logo }
+  // The request's logo wins over the theme's own default.
+  const ctx = { title, site, date, logo: logo || theme.logo }
   return {
     css: `${theme.css}\n${css || ''}`,
     options: theme.options,
