@@ -13,6 +13,18 @@ The wiki's own export (helex-tx `OWLIKI.06`) is expected to move onto this
 service too, which is why the contract takes a complete styled HTML document
 rather than anything mdbook-shaped.
 
+## Command-line client
+
+[`client/md2pdf-service.sh`](client/) turns a Markdown file into a PDF with this
+service, using pandoc for the HTML, inlined images, Mermaid, themes, logos and
+output folders:
+
+```bash
+md2pdf-service.sh --theme tervisekassa dokument.md    # -> ./dokument.pdf
+```
+
+Install and options: [client/README.md](client/README.md).
+
 ## Run it
 
 ```bash
